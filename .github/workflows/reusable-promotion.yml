@@ -1,0 +1,42 @@
+name: Reusable Branch Promotion
+
+on:
+  workflow_call:
+    inputs:
+      target_branch:
+        required: true
+        type: string
+        description: 'The branch to promote TO (qa or release)'
+      source_branch:
+        required: true
+        type: string
+        description: 'The branch to promote FROM (dev or qa)'
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetches all history for all branches
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@://github.com"
+
+      - name: Promote Branch
+        run: |
+          echo "Promoting ${{ inputs.source_branch }} into ${{ inputs.target_branch }}..."
+          
+          # Checkout the target branch and pull latest
+          git checkout ${{ inputs.target_branch }}
+          git pull origin ${{ inputs.target_branch }}
+          
+          # Attempt a fast-forward merge from the source branch
+          git merge --ff-only origin/${{ inputs.source_branch }}
+          
+          # Push the changes back to the repository
+          git push origin ${{ inputs.target_branch }}
