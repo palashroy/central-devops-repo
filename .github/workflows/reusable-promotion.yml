@@ -25,18 +25,21 @@ jobs:
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@://github.com"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Promote Branch
         run: |
           echo "Promoting ${{ inputs.source_branch }} into ${{ inputs.target_branch }}..."
           
-          # Checkout the target branch and pull latest
-          git checkout ${{ inputs.target_branch }}
-          git pull origin ${{ inputs.target_branch }}
+          # Fetch all branches to ensure runner tracking is current
+          git fetch origin
           
-          # Attempt a fast-forward merge from the source branch
-          git merge --ff-only origin/${{ inputs.source_branch }}
+          # Checkout the target branch and pull latest changes safely
+          git checkout ${{ inputs.target_branch }}
+          git pull origin ${{ inputs.target_branch }} --no-rebase
+          
+          # Standard Merge Commit (Handles diverged branches gracefully)
+          git merge origin/${{ inputs.source_branch }} -m "Merge branch 'origin/${{ inputs.source_branch }}' into ${{ inputs.target_branch }}"
           
           # Push the changes back to the repository
           git push origin ${{ inputs.target_branch }}
